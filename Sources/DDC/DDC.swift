@@ -3,10 +3,16 @@
 import Dispatch
 import IOKit.i2c
 
+/// A DDC interface connection.
 public final class DDC {
 	var connect: IOI2CConnectRef?
 	private let queue: Queue
-
+	
+	/// Opens a DDC interface.
+	/// - Parameters:
+	///   - framebuffer: A IOFramebuffer of a display.
+	///   - queue: A DispatchQueue to use for asynchronous operations.
+	/// - Throws: If failed to open an I2C interface.
 	public init(framebuffer: io_service_t, queue: DispatchQueue = DispatchQueue.global(qos: .background)) throws {
 		var busCount: IOItemCount = 0
 		guard IOFBGetI2CInterfaceCount(framebuffer, &busCount) == kIOReturnSuccess else {
@@ -26,6 +32,25 @@ public final class DDC {
 		}
 
 		self.queue = Queue(dispatchQueue: queue)
+	}
+
+	/// Opens a DDC interface.
+	/// - Parameters:
+	///   - display: A IODisplay of a dispaly.
+	///   - queue: A DispatchQueue to use for asynchronous operations.
+	/// - Throws: If failed to open an I2C interface.
+	public convenience init(display: io_service_t, queue: DispatchQueue = DispatchQueue.global(qos: .background)) throws {
+		var displayConnect: io_service_t = 0
+		guard IORegistryEntryGetParentEntry(display, kIOServicePlane, &displayConnect) == kIOReturnSuccess else {
+			throw DDCError.ioRegistryEntryGetParentEntry
+		}
+		defer { IOObjectRelease(displayConnect) }
+		var framebuffer: io_service_t = 0
+		guard IORegistryEntryGetParentEntry(displayConnect, kIOServicePlane, &framebuffer) == kIOReturnSuccess else {
+			throw DDCError.ioRegistryEntryGetParentEntry
+		}
+		defer { IOObjectRelease(framebuffer) }
+		try self.init(framebuffer: framebuffer, queue: queue)
 	}
 
 	deinit {
@@ -117,6 +142,7 @@ public final class DDC {
 }
 
 enum DDCError: Error, CustomStringConvertible {
+	case ioRegistryEntryGetParentEntry
 	case ioFBGetI2CInterfaceCount
 	case noI2CInterfacesFound
 	case ioFBCopyI2CInterfaceForBus
@@ -127,6 +153,8 @@ enum DDCError: Error, CustomStringConvertible {
 
 	var description: String {
 		switch self {
+		case .ioRegistryEntryGetParentEntry:
+			return "IORegistryEntryGetParentEntry failed"
 		case .ioFBGetI2CInterfaceCount:
 			return "IOFBGetI2CInterfaceCount failed"
 		case .noI2CInterfacesFound:
