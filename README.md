@@ -60,6 +60,36 @@ sem.wait()
 sem.wait()
 ```
 
+## Installation of the `ddc` command line tool
+
+### Using [brew](https://brew.sh/)
+
+```sh
+brew install aleksey-mashanov/brisyncd/ddc
+```
+
+### Manual
+
+```sh
+swift build -c release
+cp `swift build -c release --show-bin-path`/ddc /usr/local/bin/
+```
+
+## Adding the `DDC` library as a dependency
+
+To use the `DDC` library in a SwiftPM project, add the following line to the dependencies
+in your `Package.swift` file:
+
+```swift
+.package(url: "https://github.com/aleksey-mashanov/swift-ddc.git", from: "1.0.0"),
+```
+
+Finally, include `DDC` as a dependency for your executable target:
+
+```swift
+.product(name: "DDC", package: "swift-ddc"),
+```
+
 ## Credits
 
 The original idea was taken from:
